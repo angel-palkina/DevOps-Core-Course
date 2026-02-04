@@ -119,11 +119,33 @@ The application is configured through environment variables:
 |DEBUG | false | Debug mode (true/false)|
 
 
+## Docker
+
+This application is containerized using Docker for consistent and portable deployment.
+
+- Build the image locally
+
+    ```sh
+    docker build -t spalkkina/devops-info-service:1.0 .
+    ```
+- Run the container locally
+    ```
+    docker run -p 5000:5000 spalkkina/devops-info-service:1.0
+    ```
+    The app will be accessible at http://localhost:5000.
+- Pull from Docker Hub
+    ```
+    docker pull spalkkina/devops-info-service:1.0
+    docker run -p 5000:5000 spalkkina/devops-info-service:1.0
+    ```
+- You can run specific versions by adjusting the tag
+    ```
+    docker run -p 5000:5000 spalkkina/devops-info-service:latest
+    docker run -p 5000:5000 spalkkina/devops-info-service:1.0   
+    ```
 ## Future Development
 
 This service will evolve throughout the course:
-
-- Lab 2: Containerization with Docker
 
 - Lab 3: Unit tests and CI/CD
 
