@@ -1,9 +1,61 @@
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.venv/
+*.py[cod]
+*.so
+*.dll
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
 venv/
-.git/
+.venv/
+env/
+.env/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
 tests/
 docs/
+
+# Version Control
+.git/
+.gitignore
+.gitattributes
+.dockerignore
+README.md
+LICENSE
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Secrets (ОЧЕНЬ ВАЖНО!)
+*.key
+*.pem
+.env
+.env.*
