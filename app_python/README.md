@@ -8,12 +8,17 @@ A web application that provides detailed information about itself and its runtim
 app_python/
 ├── app.py                    # Main application
 ├── requirements.txt          # Dependencies
-├── .gitignore               # Git ignore
+├── requirements-dev.txt      # Development dependencies (testing, linting)
+├── .gitignore               
 ├── README.md                # This file
-├── tests/                   # Unit tests (Lab 3)
-│   └── __init__.py
+├── tests/                   
+│   ├── __init__.py
+│   └── test_app.py          
 └── docs/                    # Documentation
     ├── LAB01.md
+    ├── LAB02.md
+    ├── LAB03.md
+    ├── ...
     └── screenshots/
 ```
 
@@ -52,6 +57,9 @@ app_python/
 
     ```bash
     pip install -r requirements.txt
+
+    # or for testing 
+    pip install -r requirements-dev.txt
     ```
 
 ## Running the Application
@@ -118,6 +126,82 @@ The application is configured through environment variables:
 |PORT | 5000 | Port number to listen on|
 |DEBUG | false | Debug mode (true/false)|
 
+## Testing
+
+This project uses pytest for unit testing. Pytest was chosen for its:
+
+- Simple, Pythonic syntax
+
+- Powerful fixture system
+
+- Excellent plugin ecosystem (coverage, mocking)
+
+- Clear assertion reporting
+
+### What's Tested
+
+1) `GET /`	
+
+    ✓ Status code 200
+
+    ✓ JSON response format
+
+    ✓ All required sections present
+
+    ✓ Data types validation
+
+    ✓ Service info correctness
+
+2) `GET /health`	
+
+    ✓ Status code 200
+
+    ✓ Status = "healthy"
+
+    ✓ Timestamp format (ISO 8601)
+
+    ✓ Uptime tracking
+3) Error Handling	
+
+    ✓ 404 Not Found response
+
+    ✓ JSON error format
+
+    ✓ Method not allowed
+
+### Running Tests Locally
+
+```bash 
+# Run all tests
+pytest tests/ -v
+
+# Run tests with coverage report
+pytest tests/ --cov=app --cov-report=term
+
+# Run tests with HTML coverage report
+pytest tests/ --cov=app --cov-report=html
+# Then open htmlcov/index.html in your browser
+
+# Run specific test file
+pytest tests/test_app.py -v
+
+# Run tests matching a name pattern
+pytest tests/ -k "health" -v
+
+```
+
+### Expected Output
+
+![alt text](./docs/screenshots/07-test-output.png)
+
+### Test Coverage
+Current test coverage: ~92%
+![alt text](./docs/screenshots/08-test-coverage-output.png)
+
+### CI/CD Status
+
+![CI](https://github.com/angel-palkina/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 
 ## Docker
 
@@ -146,8 +230,6 @@ This application is containerized using Docker for consistent and portable deplo
 ## Future Development
 
 This service will evolve throughout the course:
-
-- Lab 3: Unit tests and CI/CD
 
 - Lab 8: Metrics endpoint for Prometheus
 

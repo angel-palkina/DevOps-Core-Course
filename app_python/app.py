@@ -4,11 +4,10 @@ Main application module providing system and service information.
 """
 
 import os
-import sys
 import socket
 import platform
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
 # ========== Flask App Initialization ==========
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 # ========== Application Start Time ==========
 START_TIME = datetime.now(timezone.utc)
 
+
 # ========== Helper Functions ==========
 def get_system_info():
     """Collect system information."""
@@ -41,6 +41,7 @@ def get_system_info():
         'python_version': platform.python_version()
     }
 
+
 def get_uptime():
     """Calculate application uptime."""
     delta = datetime.now(timezone.utc) - START_TIME
@@ -51,6 +52,7 @@ def get_uptime():
         'seconds': seconds,
         'human': f"{hours} hours, {minutes} minutes"
     }
+
 
 def get_runtime_info():
     """Collect runtime information."""
@@ -63,6 +65,7 @@ def get_runtime_info():
         'timezone': str(now.tzinfo)
     }
 
+
 def get_request_info():
     """Collect request information."""
     return {
@@ -71,6 +74,7 @@ def get_request_info():
         'method': request.method,
         'path': request.path
     }
+
 
 def get_service_info():
     """Service metadata."""
@@ -81,12 +85,14 @@ def get_service_info():
         'framework': 'Flask'
     }
 
+
 def get_endpoints_list():
     """List available endpoints."""
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
         {'path': '/health', 'method': 'GET', 'description': 'Health check'}
     ]
+
 
 # ========== Main Endpoint ==========
 @app.route('/')
@@ -102,6 +108,7 @@ def index():
     }
     return jsonify(response_data)
 
+
 # ========== Health Check Endpoint ==========
 @app.route('/health')
 def health():
@@ -113,6 +120,7 @@ def health():
         'uptime_seconds': get_uptime()['seconds']
     })
 
+
 # ========== Error Handlers ==========
 @app.errorhandler(404)
 def not_found(error):
@@ -120,6 +128,7 @@ def not_found(error):
         'error': 'Not Found',
         'message': 'Endpoint does not exist'
     }), 404
+
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -129,7 +138,9 @@ def internal_error(error):
         'message': 'An unexpected error occurred'
     }), 500
 
+
 # ========== Application Entry Point ==========
 if __name__ == '__main__':
-    logger.info(f"Starting DevOps Info Service on {HOST}:{PORT} (DEBUG={DEBUG})")
+    logger.info(
+        f"Starting DevOps Info Service on {HOST}:{PORT} (DEBUG={DEBUG})")
     app.run(host=HOST, port=PORT, debug=DEBUG)
