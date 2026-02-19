@@ -5,10 +5,15 @@ on:
     branches:
       - master
       - lab03
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
   pull_request:
     branches:
       - master
-
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
 
 jobs:
   test:
