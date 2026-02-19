@@ -32,7 +32,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.10.6
+          terraform_version: latest
       
       - name: Terraform Format Check
         id: fmt
@@ -79,6 +79,32 @@ jobs:
             | **Terraform Init** | \`${{ steps.init.outcome }}\` |
             | **Terraform Validate** | \`${{ steps.validate.outcome }}\` |
             | **TFLint** | \`${{ steps.tflint.outcome }}\` |
+            
+            <details><summary>📋 Show Details</summary>
+            
+            #### Terraform Format Check
+            ${{ steps.fmt.outcome == 'success' && '✅ All files are properly formatted' || '❌ Some files need formatting. Run: `terraform fmt -recursive`' }}
+            
+            #### Terraform Init
+            ${{ steps.init.outcome == 'success' && '✅ Initialization successful' || '❌ Initialization failed' }}
+            
+            #### Terraform Validate
+            ${{ steps.validate.outcome == 'success' && '✅ Configuration is valid' || '❌ Configuration has syntax errors' }}
+            
+            #### TFLint
+            ${{ steps.tflint.outcome == 'success' && '✅ No linting issues found' || '⚠️ Linting issues detected (see logs)' }}
+            
+            </details>
+            
+            ---
+            *Pusher: @${{ github.actor }} | Workflow: \`${{ github.workflow }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
             
       
       - name: Fail workflow if critical validation fails
