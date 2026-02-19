@@ -85,6 +85,7 @@ tflint --recursive
 
 **Trigger:** Create PR from `lab04-bonus` to `lab04`
 
+![alt text](./images/image-7.png)
 
 ### Example 3: Format Error Detection
 
