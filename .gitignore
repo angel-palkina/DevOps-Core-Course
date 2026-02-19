@@ -7,3 +7,13 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/key.json
 terraform/*.tfvars
+
+# Pulumi
+.pulumi/
+venv/
+__pycache__/
+*.pyc
+.env
+key.json
+Pulumi.*.yaml
+!Pulumi.yaml
