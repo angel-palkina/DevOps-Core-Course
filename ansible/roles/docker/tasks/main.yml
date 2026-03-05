@@ -1,42 +1,95 @@
-- name: Install required system packages
-  apt:
-    name:
-      - ca-certificates
-      - gnupg
-      - lsb-release
-    state: present
+---
+# Docker role with blocks, tags, and error handling
+- name: Docker installation block
+  block:
+    - name: Install required system packages
+      apt:
+        name:
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - apt-transport-https
+        state: present
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-  notify: restart docker
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+      notify: restart docker
 
-- name: Install Docker
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
 
-- name: Ensure Docker is running
-  service:
-    name: docker
-    state: started
-    enabled: true
+  rescue:
+    - name: Handle GPG key failure
+      debug:
+        msg: "Docker GPG key addition failed, retrying after delay"
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Wait before retry
+      wait_for:
+        timeout: 10
 
-- name: Install python docker SDK
-  pip:
-    name: docker
+    - name: Retry adding Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Retry adding Docker repository
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Retry Docker installation
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+
+  become: yes
+  tags:
+    - docker
+    - docker_install
+
+- name: Docker configuration block
+  block:
+    - name: Ensure Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install Python Docker SDK
+      pip:
+        name: docker
+        state: present
+
+  become: yes
+  tags:
+    - docker
+    - docker_config

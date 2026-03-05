@@ -1,0 +1,15 @@
+---
+# Web application defaults
+app_name: devops-info-service
+docker_image: "spalkkina/{{ app_name }}"
+docker_image_tag: "1.0"
+app_port: 5000           # External port (host)
+app_internal_port: 5000  # Internal port (container) ← ИЗМЕНЕНО
+restart_policy: unless-stopped
+
+# Docker Compose configuration
+compose_project_dir: "/opt/{{ app_name }}"
+compose_file_name: docker-compose.yml
+
+# Wipe control (default: do not wipe)
+web_app_wipe: false

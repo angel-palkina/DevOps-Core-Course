@@ -1,4 +1,0 @@
-restart_policy: unless-stopped
-
-app_port_2: 5000 
-app_environment_vars: {}
