@@ -1,0 +1,90 @@
+---
+# Wipe logic runs first (when explicitly requested)
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Web app deployment with Docker Compose and blocks/tags
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose.yml file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/{{ compose_file_name }}"
+        mode: '0644'
+
+    # - name: Login to Docker Hub
+    #   community.docker.docker_login:
+    #     username: "{{ dockerhub_username }}"
+    #     password: "{{ dockerhub_password }}"
+    #   no_log: true
+
+    # - name: Pull Docker image
+    #   community.docker.docker_image:
+    #     name: "{{ docker_image }}:{{ docker_image_tag }}"
+    #     source: pull
+    # 
+    # - name: Check if standalone container exists (from Lab 05)
+    #   command: "docker ps -aq -f name=^{{ app_name }}$"
+    #   register: standalone_container
+    #   changed_when: false
+    #   failed_when: false
+
+    # - name: Stop existing standalone container (from Lab 05)
+    #   community.docker.docker_container:
+    #     name: "{{ app_name }}"
+    #     state: absent
+    #   when: 
+    #     - standalone_container.stdout is defined
+    #     - standalone_container.stdout | length > 0
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: always
+        # pull: "policy"
+        # remove_orphans: yes
+        # recreate: "auto"  # ← ИСПРАВЛЕНО: auto вместо smart
+
+    # - name: Wait for application to be ready
+    #   wait_for:
+    #     host: localhost
+    #     port: "{{ app_port }}"
+    #     delay: 5
+    #     timeout: 60
+
+    # - name: Verify application health
+    #   uri:
+    #     url: "http://localhost:{{ app_port }}/health"
+    #     status_code: 200
+    #   register: health_check
+    #   retries: 3
+    #   delay: 5
+
+  rescue:
+    - name: Handle deployment failure
+      debug:
+        msg: "Deployment failed. Check logs with: docker compose -f {{ compose_project_dir }}/{{ compose_file_name }} logs"
+
+    - name: Show deployment status
+      command: "docker compose -f {{ compose_project_dir }}/{{ compose_file_name }} ps"
+      register: compose_status
+      ignore_errors: yes
+
+    - name: Display compose status
+      debug:
+        var: compose_status.stdout_lines
+
+  become: yes
+  tags:
+    - web_app
+    - app_deploy
+    - compose

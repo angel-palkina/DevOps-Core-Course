@@ -1,13 +1,43 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+---
+# Common role with blocks, tags, and error handling
+- name: Package installation block
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone
-  community.general.timezone:
-    name: Europe/Moscow
+  rescue:
+    - name: Handle apt cache update failure
+      debug:
+        msg: "Apt cache update failed, attempting fix-missing"
+
+    - name: Fix apt cache
+      command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Retry installing common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  become: yes
+  tags:
+    - common
+    - packages
+
+- name: System configuration block
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: Europe/Moscow
+
+  become: yes
+  tags:
+    - common
+    - config

@@ -1,0 +1,16 @@
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_image_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      - APP_NAME={{ app_name }}
+      - ENVIRONMENT=production
+    restart: {{ restart_policy }}
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
