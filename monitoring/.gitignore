@@ -1,0 +1,15 @@
+# Loki data
+loki-data/
+
+# Grafana data
+grafana-data/
+
+# Promtail positions
+positions.yaml
+
+# Environment secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
