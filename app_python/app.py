@@ -11,6 +11,9 @@ import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
+import time
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+
 # ========== JSON Formatter ==========
 class JSONFormatter(logging.Formatter):
     """Custom JSON formatter for structured logging."""
@@ -69,16 +72,52 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # ========== Application Start Time ==========
 START_TIME = datetime.now(timezone.utc)
 
+# ========== Prometheus Metrics ==========
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"]
+)
+
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"]
+)
+
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed"
+)
+
+# App-specific metrics
+ENDPOINT_CALLS = Counter(
+    "devops_info_endpoint_calls_total",
+    "DevOps info service endpoint calls",
+    ["endpoint"]
+)
+
+SYSTEM_INFO_DURATION_SECONDS = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system info"
+)
 
 # ========== Request/Response Logging Middleware ==========
 @app.before_request
 def log_request_info():
     """Log incoming HTTP request."""
+    request._start_time = time.perf_counter()
+    HTTP_REQUESTS_IN_PROGRESS.inc()
+    KNOWN_ENDPOINTS = {"/", "/health", "/metrics"}
+    raw_endpoint = request.path
+    endpoint = raw_endpoint if raw_endpoint in KNOWN_ENDPOINTS else "__unknown__"
+
+    ENDPOINT_CALLS.labels(endpoint=endpoint).inc()
     logger.info(
         "Incoming request",
         extra={
             'method': request.method,
-            'path': request.path,
+            'path': endpoint,
             'client_ip': request.remote_addr
         }
     )
@@ -86,11 +125,26 @@ def log_request_info():
 @app.after_request
 def log_response_info(response):
     """Log HTTP response."""
+    try:
+        duration = time.perf_counter() - getattr(request, "_start_time", time.perf_counter())
+    except Exception:
+        duration = 0.0
+
+    KNOWN_ENDPOINTS = {"/", "/health", "/metrics"}
+
+    raw_endpoint = request.path
+    endpoint = raw_endpoint if raw_endpoint in KNOWN_ENDPOINTS else "__unknown__"
+    method = request.method
+    status_code = str(response.status_code)
+
+    HTTP_REQUEST_DURATION_SECONDS.labels(method=method, endpoint=endpoint).observe(duration)
+    HTTP_REQUESTS_TOTAL.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
+    HTTP_REQUESTS_IN_PROGRESS.dec()
     logger.info(
         "Request completed",
         extra={
             'method': request.method,
-            'path': request.path,
+            'path': endpoint,
             'status': response.status_code,
             'client_ip': request.remote_addr
         }
@@ -101,14 +155,15 @@ def log_response_info(response):
 # ========== Helper Functions ==========
 def get_system_info():
     """Collect system information."""
-    return {
-        'hostname': socket.gethostname(),
-        'platform': platform.system(),
-        'platform_version': platform.platform(),
-        'architecture': platform.machine(),
-        'cpu_count': os.cpu_count(),
-        'python_version': platform.python_version()
-    }
+    with SYSTEM_INFO_DURATION_SECONDS.time():
+        return {
+            'hostname': socket.gethostname(),
+            'platform': platform.system(),
+            'platform_version': platform.platform(),
+            'architecture': platform.machine(),
+            'cpu_count': os.cpu_count(),
+            'python_version': platform.python_version()
+        }
 
 
 def get_uptime():
@@ -202,6 +257,12 @@ def health():
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': get_uptime()['seconds']
     })
+
+# ========== Metrics Endpoint ==========
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint."""
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 # ========== Error Handlers ==========
