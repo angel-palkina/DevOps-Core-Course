@@ -36,3 +36,7 @@ readinessProbe:
   periodSeconds: 3
   timeoutSeconds: 2
   failureThreshold: 3
+
+secrets:
+  username: "changeme"
+  password: "changeme"
