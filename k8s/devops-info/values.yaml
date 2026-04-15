@@ -1,5 +1,14 @@
 replicaCount: 5
 
+environment: "dev"
+logLevel: "INFO"
+appName: "devops-info-service"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
 image:
   repository: spalkkina/devops-info-service
   tag: "latest"
