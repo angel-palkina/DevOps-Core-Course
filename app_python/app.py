@@ -13,6 +13,7 @@ from flask import Flask, jsonify, request
 
 import time
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from threading import Lock
 
 # ========== JSON Formatter ==========
 class JSONFormatter(logging.Formatter):
@@ -69,8 +70,51 @@ HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
+# ========== Visits Persistence ==========
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+VISITS_DIR = os.path.dirname(VISITS_FILE)
+VISITS_LOCK = Lock()
+
+def ensure_visits_file():
+    """Ensure visits directory and file exist."""
+    if VISITS_DIR:
+        os.makedirs(VISITS_DIR, exist_ok=True)
+    if not os.path.exists(VISITS_FILE):
+        with open(VISITS_FILE, "w", encoding="utf-8") as f:
+            f.write("0")
+
+def read_visits():
+    """Read visits count from file, fallback to 0."""
+    ensure_visits_file()
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as f:
+            raw = f.read().strip()
+            return int(raw) if raw else 0
+    except Exception:
+        logger.exception("Failed to read visits file, fallback to 0")
+        return 0
+
+def write_visits(value: int):
+    """Atomically write visits count to file."""
+    ensure_visits_file()
+    tmp_file = f"{VISITS_FILE}.tmp"
+    with open(tmp_file, "w", encoding="utf-8") as f:
+        f.write(str(value))
+    os.replace(tmp_file, VISITS_FILE)
+
+def increment_visits():
+    """Thread-safe increment of visits counter."""
+    with VISITS_LOCK:
+        current = read_visits()
+        new_value = current + 1
+        write_visits(new_value)
+        return new_value
+
 # ========== Application Start Time ==========
 START_TIME = datetime.now(timezone.utc)
+
+# Initialize visits file on startup
+ensure_visits_file()
 
 # ========== Prometheus Metrics ==========
 HTTP_REQUESTS_TOTAL = Counter(
@@ -108,7 +152,7 @@ def log_request_info():
     """Log incoming HTTP request."""
     request._start_time = time.perf_counter()
     HTTP_REQUESTS_IN_PROGRESS.inc()
-    KNOWN_ENDPOINTS = {"/", "/health", "/metrics"}
+    KNOWN_ENDPOINTS = {"/", "/health", "/metrics", "/visits"}
     raw_endpoint = request.path
     endpoint = raw_endpoint if raw_endpoint in KNOWN_ENDPOINTS else "__unknown__"
 
@@ -130,7 +174,7 @@ def log_response_info(response):
     except Exception:
         duration = 0.0
 
-    KNOWN_ENDPOINTS = {"/", "/health", "/metrics"}
+    KNOWN_ENDPOINTS = {"/", "/health", "/metrics", "/visits"}
 
     raw_endpoint = request.path
     endpoint = raw_endpoint if raw_endpoint in KNOWN_ENDPOINTS else "__unknown__"
@@ -204,8 +248,8 @@ def get_service_info():
     """Service metadata."""
     return {
         'name': 'devops-info-service',
-        'version': '2.0.0',
-        'description': 'DevOps course info service with JSON logging',
+        'version': '2.1.0',
+        'description': 'DevOps course info service with JSON logging and persistent visits counter',
         'framework': 'Flask'
     }
 
@@ -213,8 +257,10 @@ def get_service_info():
 def get_endpoints_list():
     """List available endpoints."""
     return [
-        {'path': '/', 'method': 'GET', 'description': 'Service information'},
-        {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+        {'path': '/', 'method': 'GET', 'description': 'Service information and increment visits counter'},
+        {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'},
+        {'path': '/visits', 'method': 'GET', 'description': 'Current visits counter'}
     ]
 
 
@@ -222,6 +268,7 @@ def get_endpoints_list():
 @app.route('/')
 def index():
     """Main endpoint - returns comprehensive service and system information."""
+    visits = increment_visits()
     logger.info(
         "Index endpoint accessed",
         extra={
@@ -235,10 +282,21 @@ def index():
         'system': get_system_info(),
         'runtime': get_runtime_info(),
         'request': get_request_info(),
+        'visits': visits,
         'endpoints': get_endpoints_list()
     }
     return jsonify(response_data)
 
+
+# ========== Visits Endpoint ==========
+@app.route('/visits')
+def visits():
+    """Return current visits count without incrementing."""
+    count = read_visits()
+    return jsonify({
+        'visits': count,
+        'file': VISITS_FILE
+    })
 
 # ========== Health Check Endpoint ==========
 @app.route('/health')

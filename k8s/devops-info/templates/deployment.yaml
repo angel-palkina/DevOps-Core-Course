@@ -32,6 +32,14 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "devops-info.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-info.fullname" . }}-env
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -41,3 +49,10 @@ spec:
           # securityContext:
           #   runAsNonRoot: true
           #   allowPrivilegeEscalation: false
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "devops-info.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.fullname" . }}-data

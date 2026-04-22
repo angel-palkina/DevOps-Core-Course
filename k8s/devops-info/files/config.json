@@ -1,0 +1,11 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "metricsEnabled": true
+  },
+  "settings": {
+    "logLevel": "INFO"
+  }
+}
