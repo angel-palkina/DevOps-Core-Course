@@ -49,3 +49,6 @@ readinessProbe:
 secrets:
   username: "changeme"
   password: "changeme"
+
+rollout:
+  strategy: canary
