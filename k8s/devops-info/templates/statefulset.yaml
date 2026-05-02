@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops-info.fullname" . }}
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "devops-info.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "devops-info.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "devops-info.name" . }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "devops-info-role"
+        vault.hashicorp.com/agent-inject-secret-mycreds: "secret/data/devops-info"
+    spec:
+      containers:
+        - name: devops-info
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-info.fullname" . }}-env
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "devops-info.fullname" . }}-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
