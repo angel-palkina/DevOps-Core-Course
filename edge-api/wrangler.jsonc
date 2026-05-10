@@ -13,6 +13,16 @@
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "017ac20106ea43cb854ecee072cd7959"
+		}
 	]
 	/**
 	 * Smart Placement
