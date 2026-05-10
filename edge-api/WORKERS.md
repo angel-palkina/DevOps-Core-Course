@@ -17,7 +17,7 @@
   ![alt text](<Screenshot 2026-05-10 222021.png>)
 
 - Deployment + deployments list (terminal):  
-  ![alt text](<Screenshot 2026-05-10 210424-1.png>)
+![alt text](<Screenshot 2026-05-10 213526-2.png>)
 
 - Example `/edge` JSON response
 ![alt text](<Screenshot 2026-05-10 210424.png>)
