@@ -1,10 +1,14 @@
 export interface Env {
   APP_NAME: string;
+  API_TOKEN: string;
+  ADMIN_EMAIL: string;
+  SETTINGS: KVNamespace;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+	console.log("path", url.pathname, "colo", request.cf?.colo);
 
     if (url.pathname === "/health") {
       return Response.json({ status: "ok" });
@@ -28,6 +32,13 @@ export default {
         tlsVersion: request.cf?.tlsVersion,
       });
     }
+
+	if (url.pathname === "/counter") {
+		const raw = await env.SETTINGS.get("visits");
+		const visits = Number(raw ?? "0") + 1;
+		await env.SETTINGS.put("visits", String(visits));
+		return Response.json({ visits });
+	}
 
     return new Response("Not Found", { status: 404 });
   },
