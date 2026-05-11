@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+venv1/
+venv2/
+
+# Pip cache / local
+.cache/
+pip-wheel-metadata/
+
+# Nix
+result
+result-*
+*.drv
+*.tar.gz
+.nix-*
+
+# OS
+.DS_Store
+Thumbs.db
